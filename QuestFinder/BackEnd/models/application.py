@@ -1,14 +1,44 @@
 "Managed by Carl & Marc"
+from database import db
+from datetime import datetime, timezone
 
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-import os
-from dotenv import load_dotenv
+class application(db.Model):
+    __tablename__ = 'applications'
 
-load_dotenv()
+    id = db.Column(db.Integer, nullable = False, primary_key = True)
 
-app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
-db = SQLAlchemy(app)
+    user_id = db.Column(
+        db.Integer, 
+        db.ForeignKey('users.id'))
+    
+    task_id = db.Column(
+        db.Insteger, 
+        db.ForeignKey('tasks.id'))
+
+    status = db.Column(
+        db.String(30), 
+        db.ForeignKey('tasks.status'),
+        default = 'pending')
+
+    message = db.Column(
+        db.Text, 
+        nullable = True)
+
+    created_at = db.Column(
+        db.DateTime, 
+        nullable = False, 
+        default = lambda: datetime.now(timezone.utc))
+
+
+
+"""
+id
+user_id
+task_id
+status (pending, accepted, rejected) - default='pending'
+message (Text field - worker's message)
+created_at (DateTime - when they applied)
+"""
+
 
 
