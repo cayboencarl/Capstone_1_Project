@@ -29,7 +29,7 @@ class User (db.Model):
     
     created_at = db.Column(
         db.DateTime(timezone = True),
-        nullble = False, 
+        nullable = False, 
         default = lambda: datetime.now(timezone.utc))
 
 # What we need from the User

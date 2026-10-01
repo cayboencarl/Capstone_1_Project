@@ -2,7 +2,7 @@
 from database import db
 from datetime import datetime, timezone
 
-class application(db.Model):
+class Application(db.Model):
     __tablename__ = 'applications'
 
     id = db.Column(db.Integer, nullable = False, primary_key = True)
@@ -12,12 +12,12 @@ class application(db.Model):
         db.ForeignKey('users.id'))
     
     task_id = db.Column(
-        db.Insteger, 
+        db.Integer, 
         db.ForeignKey('tasks.id'))
 
     status = db.Column(
-        db.String(30), 
-        db.ForeignKey('tasks.status'),
+        db.String(30),
+        nullable = False, 
         default = 'pending')
 
     message = db.Column(

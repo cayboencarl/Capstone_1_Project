@@ -2,7 +2,7 @@ from database import db
 from datetime import datetime, timezone
 
 class Transaction(db.Model):
-    __tablename__ = 'applications'
+    __tablename__ = 'transactions'
 
     id = db.Column(db.Integer, nullable = False, primary_key = True)
     
@@ -22,7 +22,7 @@ class Transaction(db.Model):
 
     amount = db.Column(db.Float, nullable = False)
 
-    commision = db.Column(db.Float, 
+    commission = db.Column(db.Float, 
                 nullable = False)
 
     created_at = db.Column(

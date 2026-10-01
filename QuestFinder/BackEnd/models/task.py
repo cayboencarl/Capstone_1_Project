@@ -1,6 +1,6 @@
 "Managed by Carl & Marc"
 # Imports SqlAlchemy from database.py
-from ..database import db
+from database import db
 #Imports current Date and provide timestamp
 from datetime import datetime, timezone
 
