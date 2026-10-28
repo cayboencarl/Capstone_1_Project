@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Questfinder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles (1).css">
+</head>
+<body>
+
+<header class="top">
+  <a class="brand" data-go="home" tabindex="0"><span class="logo">◎</span>Questfinder<span class="atag" id="adminTag" hidden>Admin</span></a>
+  <nav class="nav" id="nav">
+    <button data-go="home" class="on">Home</button>
+    <button data-go="quests">Quests</button>
+    <button data-go="post">Post a Quest</button>
+    <button data-go="activity">Activity</button>
+    <button data-go="messages">Messages</button>
+  </nav>
+  <nav class="nav" id="adminNav" hidden><button data-go="admin" class="on">Users</button></nav>
+  <div class="right">
+    <button class="btn" id="authBtn">Log in / Sign up</button>
+    <button class="avatar" id="meBtn" data-avatar aria-label="My profile" hidden></button>
+    <button class="btn ghost" id="logout" hidden>Log out</button>
+  </div>
+</header>
+
+<main>
+<!-- HOME -->
+<section id="v-home" class="view on">
+  <!-- HERO IMAGE: set your image in styles.css -> :root { --hero-img: url("images/hero.jpg"); } -->
+  <div class="hero" id="hero"><img src="" alt="" id="heroImg" loading="lazy">
+    <div class="hero-t"><small id="greet">Good day</small><h1>Small tasks, done by people nearby.</h1></div>
+  </div>
+  <div class="ctas">
+    <button class="cta g" data-go="post"><i>▤</i><small>Post</small><h3>I need help with a task</h3><p>Describe it, set a reward, and get offers from verified neighbours, usually within 20 minutes.</p><b>Post a quest →</b></button>
+    <button class="cta p" data-go="quests"><i>⚭</i><small>Quest</small><h3>I want to earn during my free time</h3><p id="openN">Browse paid quests around you and pick the ones that fit your schedule.</p><b>Find a quest →</b></button>
+  </div>
+  <div class="sech"><div><h2>Recent quests</h2><small>Posted near you in the last few hours</small></div><button class="link" data-go="quests">View all →</button></div>
+  <div class="mini" id="recent"></div>
+</section>
+
+<!-- QUEST LIST -->
+<section id="v-quests" class="view">
+  <div class="head">
+    <div><h2 class="t">Quests near you</h2><small id="qSub"></small></div>
+    <div class="tools"><input id="search" type="search" placeholder="Search quests" aria-label="Search quests">
+      <select id="sort" aria-label="Sort"><option value="near">Nearest</option><option value="pay">Highest pay</option></select></div>
+  </div>
+  <div class="chips" id="filters">
+    <button class="chip on" data-cat="All">All</button><button class="chip" data-cat="Handy work">Handy work</button><button class="chip" data-cat="Pets">Pets</button><button class="chip" data-cat="Errands">Errands</button><button class="chip" data-cat="Tech help">Tech help</button><button class="chip" data-cat="Home care">Home care</button><button class="chip" data-cat="Moving">Moving</button><button class="chip" data-cat="Tutoring">Tutoring</button>
+  </div>
+  <div class="split">
+    <div class="listbox" id="qList"></div>
+    <aside class="panel" id="qPanel"><p class="empty">Hover over or tap a quest to see its details.</p></aside>
+  </div>
+</section>
+
+<!-- QUEST PAGE 2 -->
+<section id="v-quest2" class="view">
+  <button class="link" data-go="quests">← Back to quests</button>
+  <h2 class="t">Quest details</h2>
+  <div class="q2">
+    <div class="card" id="q2Card"></div>
+    <div class="mapbox"><iframe id="q2Map" title="Route map" loading="lazy"></iframe><p class="hint" id="q2Cap"></p></div>
+  </div>
+</section>
+
+<!-- POST A QUEST -->
+<section id="v-post" class="view">
+  <h2 class="t">Post a quest</h2>
+  <p class="sub">Tell neighbours what you need. Most quests get an offer within 20 minutes.</p>
+  <div class="pgrid">
+    <form id="postForm" novalidate>
+      <label>What do you need help with?<input id="pTitle" placeholder="e.g. Assemble a bookshelf" maxlength="80"><em class="err"></em></label>
+      <div class="lbl">Category</div>
+      <div class="chips wrap" id="pCats">
+        <button type="button" class="chip" data-cat="Handy work">Handy work</button><button type="button" class="chip" data-cat="Pets">Pets</button><button type="button" class="chip" data-cat="Errands">Errands</button><button type="button" class="chip" data-cat="Tech help">Tech help</button><button type="button" class="chip" data-cat="Home care">Home care</button><button type="button" class="chip" data-cat="Moving">Moving</button><button type="button" class="chip" data-cat="Tutoring">Tutoring</button>
+      </div><em class="err" id="catErr"></em>
+      <label>Details<textarea id="pDetails" rows="5" placeholder="What's involved, what you'll provide, anything a helper should bring..."></textarea></label>
+      <div class="three">
+        <label>Reward<div class="money"><span>₱</span><input id="pReward" type="number" min="50" placeholder="300"></div><em class="err"></em></label>
+        <label>How long?<input id="pDuration" placeholder="e.g. 2 hrs"></label>
+        <label>When?<input id="pWhen" placeholder="e.g. Sat morning"></label>
+      </div>
+      <p class="hint">Similar quests pay ₱200–450</p>
+      <div class="foot"><small>You're only charged once a helper completes the quest.</small><button class="primary" type="submit">Post quest</button></div>
+    </form>
+    <div><h4>How neighbours will see it</h4><div class="card" id="pv"></div></div>
+  </div>
+</section>
+
+<!-- ACTIVITY -->
+<section id="v-activity" class="view">
+  <h2 class="t">Activity</h2>
+  <div class="astats">
+    <div><small id="earnLbl">Earned</small><div class="big" id="sEarn">₱0</div></div>
+    <div class="mini-s"><div><small>Spent</small><b id="sSpent">₱0</b></div><div><small>Completed</small><b id="sDone">0</b></div><div><small>Your rating</small><b>—</b></div></div>
+  </div>
+  <div class="tabs2"><button class="on" id="tDoing">Quests I'm doing <span id="nDoing">0</span></button><button id="tPosted">Quests I posted <span id="nPosted">0</span></button></div>
+  <div class="card nopad" id="aList"></div>
+</section>
+
+<!-- MESSAGES -->
+<section id="v-messages" class="view">
+  <h2 class="t">Messages</h2>
+  <div class="card"><p class="empty">No conversations yet. When you accept a quest or receive an offer, your chat will appear here.</p></div>
+</section>
+
+<!-- PROFILE (users and admins) -->
+<section id="v-profile" class="view">
+  <div class="pgrid2">
+    <div>
+      <label class="avatar big" id="pAv" data-avatar title="Change photo"><input type="file" id="avIn" accept="image/*" hidden><span class="cam">+</span></label>
+      <form id="profForm">
+        <label>Full name<input id="fName" maxlength="60"></label>
+        <label>Location<input id="fLoc" placeholder="e.g. Purok 3, Brgy. San Vicente" maxlength="80"></label>
+        <label>About you<textarea id="fBio" rows="4" maxlength="400" placeholder="Tell neighbours about yourself"></textarea></label>
+        <label>Good at (separate with commas)<input id="fSkills" placeholder="e.g. Cleaning, Gardening, Dog walking"></label>
+        <button class="primary" type="submit">Save profile</button>
+      </form>
+      <h4>Verified</h4><ul class="checks" id="pChecks"></ul>
+    </div>
+    <div>
+      <div class="stats"><div><small>Rating</small><b>—</b></div><div><small>Quests done</small><b id="pDone">0</b></div><div><small>Replies in</small><b>—</b></div></div>
+      <div class="sech"><h2>What neighbours say</h2><small>0 reviews</small></div>
+      <p class="empty">No reviews yet.</p>
+      <div class="sech"><h2>Good at</h2></div><div class="chips wrap" id="pSkills"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ADMIN -->
+<section id="v-admin" class="view">
+  <div class="head">
+    <div><h2 class="t">Users</h2><small id="aSub"></small></div>
+    <div class="tools"><input id="aSearch" type="search" placeholder="Search name or email" aria-label="Search users"></div>
+  </div>
+  <div class="chips" id="aFilters">
+    <button class="chip on" data-f="All">All users</button><button class="chip" data-f="Needs review">Needs review</button><button class="chip" data-f="Flagged">Flagged</button><button class="chip" data-f="Suspended">Suspended</button>
+  </div>
+  <div class="split">
+    <div class="tablebox"><table id="aTable"></table></div>
+    <aside class="panel static" id="aPanel"></aside>
+  </div>
+</section>
+</main>
+
+<!-- LOG IN / SIGN UP -->
+<div class="modal" id="authModal" hidden>
+  <div class="box" role="dialog" aria-modal="true" aria-label="Log in or sign up">
+    <button class="x" data-close aria-label="Close">×</button>
+    <div class="tabs"><button id="tabLogin" class="on">Log in</button><button id="tabSignup">Sign up</button></div>
+    <form id="loginForm" novalidate>
+      <label>Email<input name="email" type="email" autocomplete="email"><em class="err"></em></label>
+      <label>Password<input name="password" type="password" autocomplete="current-password"><em class="err"></em></label>
+      <button class="primary" type="submit">Log in</button>
+    </form>
+    <form id="signupForm" novalidate hidden>
+      <label>Full name<input name="name" autocomplete="name"><em class="err"></em></label>
+      <label>Email<input name="email" type="email" autocomplete="email"><em class="err"></em></label>
+      <label>Password<input name="password" type="password" autocomplete="new-password"><em class="err"></em><small class="hint">At least 8 characters with uppercase, lowercase and a number.</small></label>
+      <label>Confirm password<input name="confirm" type="password" autocomplete="new-password"><em class="err"></em></label>
+      <button class="primary" type="submit">Create account</button>
+    </form>
+  </div>
+</div>
+
+<!-- CONFIRM POST -->
+<div class="modal" id="confirmModal" hidden>
+  <div class="box small" role="dialog" aria-modal="true">
+    <h3>Post this quest?</h3>
+    <div id="cSummary"></div>
+    <p class="hint">Neighbours within your area will be able to see it and send offers. You can cancel it later in Activity.</p>
+    <div class="btns"><button class="btn ghost" data-close>Go back</button><button class="primary" id="cYes">Yes, post quest</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+<script src="app (2).js"></script>
+</body>
+</html>
