@@ -152,3 +152,23 @@ td{padding:12px 14px;border-bottom:1px solid var(--line);white-space:nowrap}tr.u
   .stats div{padding:12px}.stats b{font-size:20px}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* Post page is a single column now */
+#v-post .pgrid{grid-template-columns:minmax(0,720px)}
+
+/* ---------- wallet ---------- */
+.mini .empty{grid-column:1/-1}
+.chip small{margin-left:4px;color:var(--muted)}.chip.on small{color:#fff;opacity:.7}
+.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px}
+.wsum{display:grid;grid-template-columns:1.4fr 1fr 1fr;background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:28px}
+.wcol{padding:22px 24px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:6px}.wcol:last-child{border:0}
+.wcol .big{font-size:46px}.wn{font:700 30px Fraunces,Georgia,serif;color:var(--green)}
+.wact{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:8px}
+.payout{display:flex;gap:10px;align-items:center;text-align:left;padding:6px 8px;border-radius:10px}.payout:hover{background:var(--tint)}.payout b{font-size:13px;display:block}
+.gc{width:26px;height:26px;border-radius:6px;background:#0a62f5;color:#fff;display:grid;place-items:center;font-weight:700;font-size:13px}
+.t2{font-size:24px}
+.wmeta{display:flex;gap:10px;align-items:center;margin-top:4px}
+.s-Pending{background:#fbeccd;color:#946a10}.s-Completed{background:var(--tint);color:var(--green)}.s-Failed{background:var(--peach);color:var(--red)}.s-Cancelled{background:#ebe7dc;color:#777}
+.dr{display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-top:1px solid var(--line);font-size:13px}.dr span{color:var(--muted)}.dr b{font-weight:500;text-align:right}
+.cp{margin-left:4px;font-size:13px;padding:0 4px;border-radius:4px}.cp:hover{background:var(--tint)}
+@media (max-width:900px){.wsum{grid-template-columns:1fr}.wcol{border-right:0;border-bottom:1px solid var(--line)}.wcol:last-child{border:0}.wcol .big{font-size:38px}}
