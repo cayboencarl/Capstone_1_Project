@@ -15,10 +15,9 @@
   <a class="brand" data-go="home" tabindex="0"><span class="logo">◎</span>Questfinder<span class="atag" id="adminTag" hidden>Admin</span></a>
   <nav class="nav" id="nav">
     <button data-go="home" class="on">Home</button>
-    <button data-go="quests">Quests</button>
-    <button data-go="post">Post a Quest</button>
     <button data-go="activity">Activity</button>
     <button data-go="messages">Messages</button>
+    <button data-go="wallet">Wallet</button>
   </nav>
   <nav class="nav" id="adminNav" hidden><button data-go="admin" class="on">Users</button></nav>
   <div class="right">
@@ -32,22 +31,24 @@
 <!-- HOME -->
 <section id="v-home" class="view on">
   <!-- HERO IMAGE: set your image in styles.css -> :root { --hero-img: url("images/hero.jpg"); } -->
-  <div class="hero" id="hero"><img src="" alt="" id="heroImg" loading="lazy">
+  <div class="hero" id="hero">
     <div class="hero-t"><small id="greet">Good day</small><h1>Small tasks, done by people nearby.</h1></div>
   </div>
   <div class="ctas">
     <button class="cta g" data-go="post"><i>▤</i><small>Post</small><h3>I need help with a task</h3><p>Describe it, set a reward, and get offers from verified neighbours, usually within 20 minutes.</p><b>Post a quest →</b></button>
     <button class="cta p" data-go="quests"><i>⚭</i><small>Quest</small><h3>I want to earn during my free time</h3><p id="openN">Browse paid quests around you and pick the ones that fit your schedule.</p><b>Find a quest →</b></button>
   </div>
-  <div class="sech"><div><h2>Recent quests</h2><small>Posted near you in the last few hours</small></div><button class="link" data-go="quests">View all →</button></div>
-  <div class="mini" id="recent"></div>
+  <div id="recentWrap" hidden>
+    <div class="sech"><div><h2>Recent quests</h2><small>Posted near you in the last few hours</small></div><button class="link" data-go="quests">View all →</button></div>
+    <div class="mini" id="recent"></div>
+  </div>
 </section>
 
 <!-- QUEST LIST -->
 <section id="v-quests" class="view">
   <div class="head">
     <div><h2 class="t">Quests near you</h2><small id="qSub"></small></div>
-    <div class="tools"><input id="search" type="search" placeholder="Search quests" aria-label="Search quests">
+    <div class="tools"><button class="btn" data-go="post">+ Post a quest</button><input id="search" type="search" placeholder="Search quests" aria-label="Search quests">
       <select id="sort" aria-label="Sort"><option value="near">Nearest</option><option value="pay">Highest pay</option></select></div>
   </div>
   <div class="chips" id="filters">
@@ -89,7 +90,6 @@
       <p class="hint">Similar quests pay ₱200–450</p>
       <div class="foot"><small>You're only charged once a helper completes the quest.</small><button class="primary" type="submit">Post quest</button></div>
     </form>
-    <div><h4>How neighbours will see it</h4><div class="card" id="pv"></div></div>
   </div>
 </section>
 
@@ -108,6 +108,24 @@
 <section id="v-messages" class="view">
   <h2 class="t">Messages</h2>
   <div class="card"><p class="empty">No conversations yet. When you accept a quest or receive an offer, your chat will appear here.</p></div>
+</section>
+
+<!-- WALLET -->
+<section id="v-wallet" class="view">
+  <h2 class="t">Wallet</h2>
+  <p class="sub">Your quest earnings, pending payments, and payouts.</p>
+  <div class="wsum">
+    <div class="wcol"><small>Available balance</small><div class="big" id="wBal">₱0.00</div>
+      <div class="wact"><button class="btn" id="wdBtn">Withdraw ↗</button>
+        <button class="payout" id="payBtn" aria-label="Edit payout method"><span class="gc">G</span><span><b id="payName">Add payout method</b><small id="paySub">GCash</small></span></button></div></div>
+    <div class="wcol"><small>Total earnings</small><b class="wn" id="wTotal">₱0.00</b><small id="wTotalN">From 0 completed quests</small></div>
+    <div class="wcol"><small>Pending earnings</small><b class="wn" id="wPend">₱0.00</b><small id="wPendN">0 payments awaiting release</small></div>
+  </div>
+  <div class="head"><h2 class="t2">Transaction history</h2>
+    <div class="tools"><input id="wSearch" type="search" placeholder="Search quest or ID" aria-label="Search transactions">
+      <select id="wStatus" aria-label="Filter by status"><option value="All">All statuses</option><option>Pending</option><option>Completed</option><option>Failed</option><option>Cancelled</option></select></div></div>
+  <div class="chips" id="wFilters"></div>
+  <div class="split"><div class="listbox" id="wList"></div><aside class="panel static" id="wPanel"></aside></div>
 </section>
 
 <!-- PROFILE (users and admins) -->
@@ -176,6 +194,20 @@
     <div id="cSummary"></div>
     <p class="hint">Neighbours within your area will be able to see it and send offers. You can cancel it later in Activity.</p>
     <div class="btns"><button class="btn ghost" data-close>Go back</button><button class="primary" id="cYes">Yes, post quest</button></div>
+  </div>
+</div>
+
+<!-- WITHDRAW -->
+<div class="modal" id="wdModal" hidden>
+  <div class="box small" role="dialog" aria-modal="true" aria-label="Withdraw funds">
+    <button class="x" data-close aria-label="Close">×</button>
+    <h3>Withdraw funds</h3><p class="hint">Available balance: <b id="wdAvail">₱0.00</b></p>
+    <form id="wdForm" novalidate>
+      <label>GCash mobile number<input name="gcash" inputmode="numeric" placeholder="09171234567" maxlength="13"><em class="err"></em></label>
+      <label>Amount<div class="money"><span>₱</span><input name="amount" type="number" min="50" step="1" placeholder="500"></div><em class="err"></em></label>
+      <p class="hint">Demo only: no real money is moved until a payment provider is connected.</p>
+      <div class="btns"><button type="button" class="btn ghost" data-close>Cancel</button><button class="primary" type="submit">Withdraw</button></div>
+    </form>
   </div>
 </div>
 
