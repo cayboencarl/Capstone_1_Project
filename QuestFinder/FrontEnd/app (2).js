@@ -4,16 +4,7 @@
 const ADMIN = { email: "admin@questfinder.ph", pass: "Admin@1234" };
 let me = { lat: 16.4150, lng: 120.6000 }; // fallback "worker" location, replaced by GPS if allowed
 
-const SEED = [
-  { id: 1, title: "Assemble an IKEA wardrobe", cat: "Handy work", price: 380, posted: "12 min ago", takes: "~2 hrs", when: "Today, after 5 pm", client: "Maya R.", lat: 16.4205, lng: 120.6042, details: "PAX wardrobe, two doors, still in boxes. I have an Allen key but no drill. Please bring one if you can. Second-floor flat, lift available." },
-  { id: 2, title: "Walk Biscuit twice this Saturday", cat: "Pets", price: 200, posted: "26 min ago", takes: "2 × 30 min", when: "Sat, 9 am and 4 pm", client: "Tom H.", lat: 16.4128, lng: 120.5961, details: "Biscuit is a friendly aspin. Leash and treats are by the door." },
-  { id: 3, title: "Pick up groceries from the public market", cat: "Errands", price: 200, posted: "40 min ago", takes: "~45 min", when: "Tomorrow morning", client: "Eleanor P.", lat: 16.4092, lng: 120.5968, details: "List will be sent in chat. Grocery budget is provided separately." },
-  { id: 4, title: "Help set up a new home Wi-Fi router", cat: "Tech help", price: 300, posted: "1 hr ago", takes: "~1 hr", when: "Any evening this week", client: "Dev S.", lat: 16.4188, lng: 120.6071, details: "New router from the ISP. Need help connecting it and setting a password." },
-  { id: 5, title: "Water plants while I'm away (5 days)", cat: "Home care", price: 500, posted: "2 hrs ago", takes: "10 min / day", when: "Oct 2 – Oct 6", client: "Lina K.", lat: 16.4137, lng: 120.6018, details: "Indoor and balcony plants. Key will be left with the guard." },
-  { id: 6, title: "Carry a sofa down two flights of stairs", cat: "Moving", price: 200, posted: "3 hrs ago", takes: "~30 min", when: "Sunday, 11 am", client: "Ryan W.", lat: 16.4220, lng: 120.5990, details: "Two-seater sofa, no elevator. Need two strong helpers." },
-  { id: 7, title: "Maths revision session", cat: "Tutoring", price: 450, posted: "4 hrs ago", takes: "1 hr", when: "Thursday, 6 pm", client: "Kai T.", lat: 16.4165, lng: 120.6105, details: "Grade 10 algebra review for an upcoming exam." },
-  { id: 8, title: "Mount a TV on a plasterboard wall", cat: "Handy work", price: 200, posted: "5 hrs ago", takes: "~1.5 hrs", when: "This weekend", client: "Chris L.", lat: 16.4080, lng: 120.6040, details: "55-inch TV, bracket already bought. Please bring a stud finder and drill." }
-];
+const SEED = []; // no sample quests: every quest is posted by a user
 
 const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -23,6 +14,7 @@ const sha = async (s) => { if (!window.crypto?.subtle) return btoa(s); const b =
 const toast = (m) => { const t = $("#toast"); t.textContent = m; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => (t.hidden = true), 2600); };
 
 let users = db.get("qf-users", []), user = null, posted = db.get("qf-posted", []);
+let wal = { txns: [], gcash: "" }, pendingView = null, selTx = null, wFilter = "All";
 let act = { doing: [], posted: [] }, actTab = "doing", cat = "All", selId = null, postCat = "", aFilter = "All";
 const allQuests = () => [...posted, ...SEED];
 const initials = (n) => (n || "?").trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join("").toUpperCase();
@@ -36,15 +28,16 @@ function go(v) {
   const admin = user?.role === "admin";
   if (admin && !["admin", "profile"].includes(v)) v = "admin";
   if (v === "admin" && !admin) v = "home";
-  if (v === "profile" && !user) { openAuth("login"); return; }
+  // Everything except Home needs an account. Guests get the log in / sign up pop-up instead.
+  if (!user && v !== "home") { pendingView = v; toast("Please log in or sign up to continue."); openAuth("login"); return; }
   $$(".view").forEach((x) => x.classList.toggle("on", x.id === "v-" + v));
   $$(".nav button").forEach((b) => b.classList.toggle("on", b.dataset.go === v || (v === "quest2" && b.dataset.go === "quests")));
-  if (v === "activity") renderAct(); if (v === "profile") renderProfile(); if (v === "admin") renderAdmin();
+  if (v === "activity") renderAct(); if (v === "profile") renderProfile(); if (v === "admin") renderAdmin(); if (v === "wallet") renderWallet();
   closePanel(); scrollTo(0, 0);
 }
 document.addEventListener("click", (e) => {
   const g = e.target.closest("[data-go]"); if (g) go(g.dataset.go);
-  if (e.target.closest("[data-close]") || e.target.classList.contains("modal")) $$(".modal").forEach((m) => (m.hidden = true));
+  if (e.target.closest("[data-close]") || e.target.classList.contains("modal")) { $$(".modal").forEach((m) => (m.hidden = true)); pendingView = null; }
 });
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") { $$(".modal").forEach((m) => (m.hidden = true)); closePanel(); } });
 $(".brand").addEventListener("keydown", (e) => { if (e.key === "Enter") go("home"); });
@@ -66,7 +59,7 @@ function openAuth(tab = "login") {
   clearErrs($("#loginForm")); clearErrs($("#signupForm")); $("#authModal").hidden = false;
   setTimeout(() => $(tab === "login" ? "#loginForm input" : "#signupForm input").focus(), 50);
 }
-$("#authBtn").onclick = () => openAuth("login");
+$("#authBtn").onclick = () => { pendingView = null; openAuth("login"); };
 $("#tabLogin").onclick = () => openAuth("login"); $("#tabSignup").onclick = () => openAuth("signup");
 const needLogin = () => { if (user) return false; toast("Please log in or sign up first."); openAuth("login"); return true; };
 
@@ -90,16 +83,18 @@ $("#signupForm").addEventListener("submit", async (e) => {
   users.push(u); db.set("qf-users", users); signIn(u); $("#authModal").hidden = true; f.reset(); toast("Account created. Welcome, " + name.split(" ")[0] + "!");
 });
 function signIn(u) {
-  user = u; act = db.get("qf-act-" + u.email, { doing: [], posted: [] }); db.set("qf-session", u.email);
-  paintAuth(); renderAll(); go(u.role === "admin" ? "admin" : "home");
+  user = u; act = db.get("qf-act-" + u.email, { doing: [], posted: [] }); wal = db.get("qf-wallet-" + u.email, { txns: [], gcash: "" }); db.set("qf-session", u.email);
+  const target = u.role === "admin" ? "admin" : pendingView || "home"; pendingView = null;
+  paintAuth(); renderAll(); go(target);
 }
-$("#logout").onclick = () => { user = null; localStorage.removeItem("qf-session"); act = { doing: [], posted: [] }; paintAuth(); renderAll(); go("home"); toast("You have been logged out."); };
+$("#logout").onclick = () => { user = null; localStorage.removeItem("qf-session"); act = { doing: [], posted: [] }; wal = { txns: [], gcash: "" }; paintAuth(); renderAll(); go("home"); toast("You have been logged out."); };
 $("#meBtn").onclick = () => go("profile");
 function paintAuth() {
   const a = user?.role === "admin";
   $("#authBtn").hidden = !!user; $("#meBtn").hidden = !user; $("#logout").hidden = !user;
   $("#nav").hidden = a; $("#adminNav").hidden = !a; $("#adminTag").hidden = !a;
   $$("[data-avatar]").forEach((el) => { el.dataset.ini = initials(user?.name); el.classList.toggle("has", !!user?.photo); el.style.backgroundImage = user?.photo ? `url("${user.photo}")` : ""; });
+  $("#recentWrap").hidden = !user; renderRecent();
   const h = new Date().getHours(); $("#greet").textContent = (h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening") + (user ? ", " + user.name.split(" ")[0] : "");
 }
 
@@ -107,15 +102,15 @@ function paintAuth() {
 function renderAll() { renderQuests(); renderRecent(); }
 function renderRecent() {
   const q = allQuests().slice(0, 5);
-  $("#recent").innerHTML = q.map((x) => `<button class="qc" data-open="${x.id}"><div class="r"><small>${esc(x.cat)}</small><span class="price" style="font-size:16px">${peso(x.price)}</span></div><b>${esc(x.title)}</b><small>${fmtKm(km(me, x))} · ${esc(x.client)} · ${esc(x.posted)}</small></button>`).join("");
-  $("#openN").textContent = `Browse paid quests around you. ${allQuests().length} open nearby.`;
+  $("#recent").innerHTML = !q.length ? `<p class="empty">No quests yet. Be the first to post one.</p>` : q.map((x) => `<button class="qc" data-open="${x.id}"><div class="r"><small>${esc(x.cat)}</small><span class="price" style="font-size:16px">${peso(x.price)}</span></div><b>${esc(x.title)}</b><small>${fmtKm(km(me, x))} · ${esc(x.client)} · ${esc(x.posted)}</small></button>`).join("");
+  $("#openN").textContent = user && allQuests().length ? `Browse paid quests around you. ${allQuests().length} open nearby.` : "Browse paid quests around you and pick the ones that fit your schedule.";
 }
 function renderQuests() {
   const term = $("#search").value.trim().toLowerCase(), sort = $("#sort").value;
   const list = allQuests().filter((q) => (cat === "All" || q.cat === cat) && (q.title + q.cat + q.details).toLowerCase().includes(term))
     .sort((a, b) => (sort === "pay" ? b.price - a.price : km(me, a) - km(me, b)));
   $("#qSub").textContent = `${list.length} open quest${list.length === 1 ? "" : "s"} near you`;
-  $("#qList").innerHTML = list.length ? list.map((q) => `<button class="qi ${q.id === selId ? "sel" : ""}" data-id="${q.id}"><small>${esc(q.cat)} · ${esc(q.posted)}</small><div class="row"><span>${esc(q.title)}</span><span class="price">${peso(q.price)}</span></div><small>${fmtKm(km(me, q))} away · ${esc(q.takes)} · ${esc(q.when)}</small></button>`).join("") : `<p class="empty">No quests match your search.</p>`;
+  $("#qList").innerHTML = list.length ? list.map((q) => `<button class="qi ${q.id === selId ? "sel" : ""}" data-id="${q.id}"><small>${esc(q.cat)} · ${esc(q.posted)}</small><div class="row"><span>${esc(q.title)}</span><span class="price">${peso(q.price)}</span></div><small>${fmtKm(km(me, q))} away · ${esc(q.takes)} · ${esc(q.when)}</small></button>`).join("") : `<p class="empty">${allQuests().length ? "No quests match your search." : "No quests have been posted yet. Be the first to post one!"}</p>`;
 }
 $("#search").oninput = renderQuests; $("#sort").onchange = renderQuests;
 $("#filters").onclick = (e) => { const c = e.target.closest(".chip"); if (!c) return; cat = c.dataset.cat; $$("#filters .chip").forEach((x) => x.classList.toggle("on", x === c)); renderQuests(); };
@@ -150,7 +145,10 @@ function openQuest2(id) {
   $("#acceptBtn").onclick = () => {
     if (needLogin()) return;
     if (q.owner === user.email) return toast("You can't accept your own quest.");
-    if (!act.doing.some((a) => a.id === q.id)) act.doing.unshift({ id: q.id, title: q.title, client: q.client, date: dateStr(), amount: q.price, status: "In progress" });
+    if (!act.doing.some((a) => a.id === q.id)) {
+      act.doing.unshift({ id: q.id, title: q.title, client: q.client, date: dateStr(), amount: q.price, status: "In progress" });
+      wal.txns.unshift(newTxn({ type: "Quest payment", title: q.title, amount: q.price, status: "Pending", quest: q.title, questId: q.id, via: "Questfinder escrow", note: `Released once ${q.client} confirms the quest is complete.` })); saveWal();
+    }
     saveAct(); actTab = "doing"; go("activity"); toast("Task accepted! Check Activity for progress.");
   };
   go("quest2");
@@ -159,15 +157,7 @@ const dateStr = () => new Date().toLocaleDateString("en-PH", { month: "short", d
 const saveAct = () => user && db.set("qf-act-" + user.email, act);
 
 /* ---------- post a quest ---------- */
-$("#pCats").onclick = (e) => { const c = e.target.closest(".chip"); if (!c) return; postCat = c.dataset.cat; $$("#pCats .chip").forEach((x) => x.classList.toggle("on", x === c)); $("#catErr").textContent = ""; preview(); };
-$("#postForm").addEventListener("input", preview);
-function preview() {
-  const t = $("#pTitle").value.trim(), d = $("#pDetails").value.trim(), r = $("#pReward").value;
-  $("#pv").innerHTML = `<div style="display:flex;justify-content:space-between"><small>${esc(postCat || "Category")}</small><span class="price">${peso(r || 0)}</span></div>
-    <h3 style="font-size:20px;margin:8px 0;${t ? "" : "color:#b7b7b0"}">${esc(t || "Your quest title")}</h3>
-    <p style="font-size:13px;color:${d ? "inherit" : "#b7b7b0"};line-height:1.5">${esc(d || "A short description of what needs doing will appear here.")}</p>
-    <div class="facts" style="grid-template-columns:1fr;font-size:12px;color:var(--muted)"><div>${esc(user?.loc || "Brgy. San Vicente")} · shown to neighbours within 5 km</div><div>${esc($("#pDuration").value || "Flexible")} · ${esc($("#pWhen").value || "Flexible timing")}</div></div>`;
-}
+$("#pCats").onclick = (e) => { const c = e.target.closest(".chip"); if (!c) return; postCat = c.dataset.cat; $$("#pCats .chip").forEach((x) => x.classList.toggle("on", x === c)); $("#catErr").textContent = ""; };
 $("#postForm").addEventListener("submit", (e) => {
   e.preventDefault(); if (needLogin()) return;
   const t = $("#pTitle"), r = $("#pReward"); let ok = true;
@@ -185,8 +175,8 @@ $("#cYes").onclick = () => {
     lat: me.lat + (Math.random() - .5) * .01, lng: me.lng + (Math.random() - .5) * .01 }; // demo only: replace with a real address/pin picker
   posted.unshift(q); db.set("qf-posted", posted);
   act.posted.unshift({ id: q.id, title: q.title, client: "Open for offers", date: dateStr(), amount: q.price, status: "Open" }); saveAct();
-  $("#confirmModal").hidden = true; $("#postForm").reset(); postCat = ""; $$("#pCats .chip").forEach((x) => x.classList.remove("on")); preview();
-  renderAll(); actTab = "posted"; go("activity"); toast("Your quest has been posted!");
+  $("#confirmModal").hidden = true; $("#postForm").reset(); postCat = ""; $$("#pCats .chip").forEach((x) => x.classList.remove("on"));
+  renderAll(); go("quests"); toast("Your quest has been posted! You can also find it in Activity.");
 };
 
 /* ---------- activity ---------- */
@@ -202,7 +192,11 @@ function renderAct() {
     : `<p class="empty">${actTab === "doing" ? "No quests yet. Find one and tap “Accept Task”." : "You haven't posted any quests yet."}</p>`;
 }
 $("#tDoing").onclick = () => { actTab = "doing"; renderAct(); }; $("#tPosted").onclick = () => { actTab = "posted"; renderAct(); };
-$("#aList").onclick = (e) => { const b = e.target.closest("[data-done]"); if (!b) return; act[actTab][+b.dataset.done].status = "Completed"; saveAct(); renderAct(); toast("Marked as completed."); };
+$("#aList").onclick = (e) => {
+  const b = e.target.closest("[data-done]"); if (!b) return; const a = act[actTab][+b.dataset.done]; a.status = "Completed"; saveAct();
+  if (actTab === "doing") { const x = wal.txns.find((t) => t.questId === a.id && t.status === "Pending"); if (x) { x.status = "Completed"; x.note = "Payment released to your wallet."; saveWal(); } }
+  renderAct(); toast(actTab === "doing" ? "Completed! " + peso(a.amount) + " added to your wallet." : "Marked as completed.");
+};
 
 /* ---------- profile (blank until the user fills it in) ---------- */
 function renderProfile() {
@@ -223,6 +217,62 @@ $("#avIn").addEventListener("change", (e) => { // photo is shrunk to 300px so it
   r.onload = () => { img.onload = () => { const s = Math.min(1, 300 / Math.max(img.width, img.height)), c = document.createElement("canvas"); c.width = img.width * s; c.height = img.height * s;
     c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); user.photo = c.toDataURL("image/jpeg", .85); db.set("qf-users", users); paintAuth(); toast("Photo updated."); }; img.src = r.result; };
   r.readAsDataURL(f);
+});
+
+/* ---------- wallet ---------- */
+const peso2 = (n) => "₱" + Number(n).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const saveWal = () => user && db.set("qf-wallet-" + user.email, wal);
+const newTxn = (o) => ({ id: "TXN-" + Math.random().toString(36).slice(2, 8).toUpperCase(), ts: Date.now(), ...o });
+const fmtD = (t) => new Date(t).toLocaleDateString("en-PH", { month: "short", day: "numeric" });
+const fmtT = (t) => new Date(t).toLocaleTimeString("en-PH", { hour: "numeric", minute: "2-digit" });
+const maskG = () => (wal.gcash ? "GCash •••• " + wal.gcash.slice(-4) : "");
+const availBal = () => wal.txns.filter((x) => x.status === "Completed").reduce((s, x) => s + x.amount, 0);
+function renderWallet() {
+  if (!user) return;
+  const t = wal.txns, sum = (l) => l.reduce((s, x) => s + x.amount, 0), qp = (s) => t.filter((x) => x.type === "Quest payment" && x.status === s);
+  $("#wBal").textContent = peso2(availBal());
+  $("#wTotal").textContent = peso2(sum(qp("Completed"))); $("#wTotalN").textContent = `From ${qp("Completed").length} completed quest${qp("Completed").length === 1 ? "" : "s"}`;
+  $("#wPend").textContent = peso2(sum(qp("Pending"))); $("#wPendN").textContent = `${qp("Pending").length} payment${qp("Pending").length === 1 ? "" : "s"} awaiting release`;
+  $("#payName").textContent = wal.gcash ? maskG() : "Add payout method"; $("#paySub").textContent = wal.gcash ? user.name + " · Payout method" : "GCash";
+  const lab = { "Quest payment": "Quest payments", Withdrawal: "Withdrawals", Refund: "Refunds" };
+  $("#wFilters").innerHTML = `<button class="chip ${wFilter === "All" ? "on" : ""}" data-f="All">All <small>${t.length}</small></button>` +
+    Object.keys(lab).map((k) => `<button class="chip ${wFilter === k ? "on" : ""}" data-f="${k}">${lab[k]} <small>${t.filter((x) => x.type === k).length}</small></button>`).join("");
+  const term = $("#wSearch").value.trim().toLowerCase(), st = $("#wStatus").value;
+  const rows = t.filter((x) => (wFilter === "All" || x.type === wFilter) && (st === "All" || x.status === st) && (x.title + x.id).toLowerCase().includes(term)).sort((a, b) => b.ts - a.ts);
+  if (!rows.some((x) => x.id === selTx)) selTx = rows[0]?.id || null;
+  $("#wList").innerHTML = rows.length ? rows.map((x) => `<button class="qi ${x.id === selTx ? "sel" : ""}" data-tx="${x.id}"><small>${esc(x.type)} · ${fmtD(x.ts)}, ${fmtT(x.ts)}</small>
+    <div class="row"><span>${esc(x.title)}</span><span class="price" style="font-size:17px">${x.amount < 0 ? "−" : "+"}${peso(Math.abs(x.amount))}</span></div>
+    <div class="wmeta"><span class="pill s-${x.status}">${x.status}</span><small class="mono">${x.id}</small></div></button>`).join("")
+    : `<p class="empty">${t.length ? "No transactions match your filters." : "No transactions yet. Payments from accepted quests and your withdrawals will appear here."}</p>`;
+  const x = t.find((y) => y.id === selTx);
+  $("#wPanel").innerHTML = x ? `<small>${esc(x.type)} · ${new Date(x.ts).toLocaleDateString("en-PH", { dateStyle: "medium" })}</small><h2>${esc(x.title)}</h2><span class="price xl">${x.amount < 0 ? "−" : ""}${peso2(Math.abs(x.amount))}</span>
+    <div class="facts"><div><small>Status</small><span class="pill s-${x.status}">${x.status}</span></div><div><small>Date</small>${new Date(x.ts).toLocaleDateString("en-PH", { dateStyle: "medium" })}</div><div><small>Time</small>${fmtT(x.ts)}</div></div>
+    <p style="font-size:13px;line-height:1.5;margin-bottom:10px">${esc(x.note)}</p>
+    <div class="dr"><span>Transaction ID</span><b class="mono">${x.id} <button class="cp" data-copy="${x.id}" title="Copy ID" aria-label="Copy transaction ID">⧉</button></b></div>
+    <div class="dr"><span>Type</span><b>${esc(x.type)}</b></div><div class="dr"><span>Quest</span><b>${esc(x.quest || "—")}</b></div><div class="dr"><span>Paid via</span><b>${esc(x.via)}</b></div>
+    <button class="btn ghost" id="rcpt" style="width:100%;margin-top:14px;padding:11px">⬇ Download receipt</button>` : `<p class="empty">Select a transaction to see its details.</p>`;
+}
+$("#wSearch").oninput = renderWallet; $("#wStatus").onchange = renderWallet;
+$("#wFilters").onclick = (e) => { const c = e.target.closest(".chip"); if (c) { wFilter = c.dataset.f; renderWallet(); } };
+$("#wList").onclick = (e) => { const i = e.target.closest("[data-tx]"); if (i) { selTx = i.dataset.tx; renderWallet(); } };
+$("#wPanel").onclick = (e) => {
+  const c = e.target.closest("[data-copy]"); if (c) navigator.clipboard?.writeText(c.dataset.copy).then(() => toast("Transaction ID copied."), () => toast(c.dataset.copy));
+  if (e.target.closest("#rcpt")) {
+    const x = wal.txns.find((y) => y.id === selTx); if (!x) return;
+    const txt = ["QUESTFINDER RECEIPT", "-------------------", "Transaction ID: " + x.id, "Type: " + x.type, "Description: " + x.title, "Amount: " + (x.amount < 0 ? "-" : "") + peso2(Math.abs(x.amount)), "Status: " + x.status, "Date: " + new Date(x.ts).toLocaleString("en-PH"), "Paid via: " + x.via, "Account: " + user.name + " (" + user.email + ")"].join("\n");
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([txt], { type: "text/plain" })); a.download = `Questfinder-receipt-${x.id}.txt`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+};
+function openWd() { const f = $("#wdForm"); clearErrs(f); f.gcash.value = wal.gcash || ""; f.amount.value = ""; $("#wdAvail").textContent = peso2(availBal()); $("#wdModal").hidden = false; setTimeout(() => (wal.gcash ? f.amount : f.gcash).focus(), 50); }
+$("#wdBtn").onclick = openWd; $("#payBtn").onclick = openWd;
+$("#wdForm").addEventListener("submit", (e) => {
+  e.preventDefault(); const f = e.target; clearErrs(f);
+  const g = f.gcash.value.replace(/[\s-]/g, ""), amt = +f.amount.value;
+  const ok = [setErr(f, "gcash", /^09\d{9}$/.test(g) ? "" : "Enter a valid 11-digit GCash number (e.g. 09171234567)."),
+    setErr(f, "amount", !amt || amt < 50 ? "Minimum withdrawal is ₱50." : amt > availBal() ? "That's more than your available balance." : "")];
+  if (ok.includes(false)) return;
+  wal.gcash = g; wal.txns.unshift(newTxn({ type: "Withdrawal", title: "Withdrawal to " + maskG(), amount: -amt, status: "Completed", quest: "", via: maskG(), note: "Sent to your GCash account." })); saveWal();
+  $("#wdModal").hidden = true; wFilter = "All"; selTx = wal.txns[0].id; renderWallet(); toast(peso(amt) + " withdrawal requested.");
 });
 
 /* ---------- admin dashboard ---------- */
@@ -252,8 +302,12 @@ $("#aFilters").onclick = (e) => { const c = e.target.closest(".chip"); if (!c) r
 /* ---------- start ---------- */
 function locate() { navigator.geolocation?.getCurrentPosition((p) => { me = { lat: p.coords.latitude, lng: p.coords.longitude }; renderAll(); }, () => {}, { timeout: 8000 }); }
 (async function boot() {
-  if (!users.some((u) => u.role === "admin")) { users.push({ email: ADMIN.email, hash: await sha(ADMIN.pass), name: "Admin", role: "admin", status: "Active", loc: "", bio: "", skills: "", photo: "", checks: { id: 1, ph: 1, bg: 1 }, joined: Date.now() }); db.set("qf-users", users); }
+  // The admin account always matches ADMIN at the top of this file, so editing it takes effect on refresh.
+  const adminHash = await sha(ADMIN.pass), adm = users.find((u) => u.role === "admin");
+  if (adm) { adm.email = ADMIN.email; adm.hash = adminHash; adm.status = "Active"; }
+  else users.push({ email: ADMIN.email, hash: adminHash, name: "Admin", role: "admin", status: "Active", loc: "", bio: "", skills: "", photo: "", checks: { id: 1, ph: 1, bg: 1 }, joined: Date.now() });
+  db.set("qf-users", users);
   const u = users.find((x) => x.email === db.get("qf-session", null));
   if (u && u.status !== "Suspended") signIn(u); else { paintAuth(); renderAll(); }
-  preview(); locate();
+  locate();
 })();
