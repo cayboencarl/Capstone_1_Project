@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Questfinder</title>
+<meta name="theme-color" content="#0f1b3d">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Questfinder">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles (1).css">
+</head>
+<body>
+
+<!-- TOP BAR: Brand on the left, account controls on the right -->
+<header class="top">
+  <a class="brand" id="brandL" data-go="home" tabindex="0"><span class="logo">Q</span>Questfinder</a>
+  <div class="tools">
+    <button class="btn" id="authBtn">Log in / Sign up</button>
+    <button class="icon" id="bellBtn" data-go="notifs" aria-label="Notifications" hidden><svg viewBox="0 0 24 24"><path d="M6 9a6 6 0 0 1 12 0c0 6 2 7 2 7H4s2-1 2-7"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><i class="dot" id="bellDot" hidden>0</i></button>
+    <button class="icon" id="gearBtn" data-go="settings" aria-label="Settings" hidden><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg></button>
+  </div>
+  <button class="who" id="meBtn" data-go="profile" aria-label="Profile" hidden><span class="avatar" data-avatar></span></button>
+</header>
+
+<main>
+<!-- HOME -->
+<section id="v-home" class="view on">
+  <!-- HOME IMAGE: change --hero-img at the top of styles.css -->
+  <div class="hero" id="hero"><div class="hero-t"><small id="greet">Good day</small><h1>Small tasks, done by people nearby.</h1></div></div>
+  <div class="duo">
+    <button class="tile post" data-go="post"><span class="ti">✎</span><b>Post</b><small>I need help with a task</small></button>
+    <button class="tile quest" data-go="quests"><span class="ti">⚑</span><b>Quest</b><small>I want to earn</small></button>
+  </div>
+</section>
+
+<!-- POST (client) -->
+<section id="v-post" class="view">
+  <div class="bar"><button class="back" data-go="home" aria-label="Back">←</button><h2>Post a quest</h2><button class="btn" type="submit" form="postForm">Publish</button></div>
+  <form id="postForm" novalidate>
+    <label>Title<input name="title" maxlength="80" placeholder="e.g. Clean and remove weeds"><em class="err"></em></label>
+    <label>Location<input name="location" maxlength="120" placeholder="e.g. Purok 3, Brgy. San Vicente"><em class="err"></em></label>
+    <button type="button" class="link" id="useLoc">⌖ Use my current location for the map pin</button>
+    <label>Work description<textarea name="description" rows="4" placeholder="What needs to be done, and what the worker should bring"></textarea><em class="err"></em></label>
+    <label>Qualification<textarea name="qualification" rows="2" placeholder="e.g. Physically fit, no experience required"></textarea></label>
+    <div class="two">
+      <label>Offered pay<div class="money"><span>₱</span><input name="pay" type="number" min="50" placeholder="160"></div><em class="err"></em></label>
+      <label>Duration (mins)<input name="duration" type="number" min="5" placeholder="60"><em class="err"></em></label>
+    </div>
+    <label>Upload photo<input name="photo" type="file" accept="image/*"></label>
+    <img id="pPrev" class="prev" alt="Photo preview" hidden>
+  </form>
+</section>
+
+<!-- QUESTS (task worker) -->
+<section id="v-quests" class="view">
+  <div class="bar"><button class="back" data-go="home" aria-label="Back">←</button><h2>Quests</h2></div>
+  <div class="mapbox"><iframe id="qMap" title="Map of your area" loading="lazy"></iframe></div>
+  <div class="chips" id="scopes"><button class="chip on" data-s="open">Open quests</button><button class="chip" data-s="mine">My posts</button><button class="chip" data-s="jobs">My jobs</button></div>
+  <input id="search" type="search" placeholder="Search quests" aria-label="Search quests">
+  <div class="qgrid" id="qList"></div>
+</section>
+
+<!-- QUEST DETAIL -->
+<section id="v-quest" class="view">
+  <div class="bar"><button class="back" data-go="quests" aria-label="Back">←</button><h2>Quests</h2></div>
+  <div class="mapbox"><iframe id="dMap" title="Route map" loading="lazy"></iframe><p class="hint" id="dCap"></p></div>
+  <div id="dCard"></div>
+</section>
+
+<!-- WALLET -->
+<section id="v-wallet" class="view">
+  <div class="bar"><button class="back" data-go="home" aria-label="Back">←</button><h2>Wallet</h2></div>
+  <div class="wcard"><small>Available balance</small><div class="big" id="wBal">₱0.00</div></div>
+  <div class="wbtns">
+    <button class="roundb" id="wdBtn"><span>↑</span>Withdraw</button>
+    <button class="roundb" id="dpBtn"><span>↓</span>Deposit</button>
+  </div>
+</section>
+
+<!-- TRANSACTIONS -->
+<section id="v-tx" class="view">
+  <div class="bar"><button class="back" data-go="home" aria-label="Back">←</button><h2>Transactions</h2></div>
+  <div class="listbox" id="txList"></div>
+</section>
+
+<!-- MESSAGES -->
+<section id="v-msgs" class="view">
+  <div class="bar"><button class="back" data-go="home" aria-label="Back">←</button><h2>Messages</h2></div>
+  <div class="listbox" id="cList"></div>
+</section>
+<section id="v-chat" class="view">
+  <div class="bar"><button class="back" data-go="msgs" aria-label="Back">←</button><span class="avatar" id="chAv"></span><h2 id="chName">Chat</h2></div>
+  <div class="chat" id="chLog"></div>
+  <form class="chform" id="chForm" autocomplete="off"><input id="chIn" placeholder="Write a message" maxlength="1000" aria-label="Message"><button class="btn" type="submit">Send</button></form>
+</section>
+
+<!-- NOTIFICATIONS -->
+<section id="v-notifs" class="view">
+  <div class="bar"><button class="back" data-go="home" aria-label="Back">←</button><h2>Notifications</h2><button class="link" id="readAll">Mark all read</button></div>
+  <div class="listbox" id="noteList"></div>
+</section>
+
+<!-- PROFILE (blank until the user fills it in) -->
+<section id="v-profile" class="view">
+  <div class="bar"><button class="back" data-go="home" aria-label="Back">←</button><h2>Profile</h2></div>
+  <label class="avatar big" id="pAv" data-avatar title="Change photo"><input type="file" id="avIn" accept="image/*" hidden><span class="cam">+</span></label>
+  <form id="profForm">
+    <label>Full name<input id="fName" maxlength="60"></label>
+    <label>Location<input id="fLoc" placeholder="e.g. Purok 3, Brgy. San Vicente" maxlength="80"></label>
+    <label>About you<textarea id="fBio" rows="4" maxlength="400" placeholder="Tell neighbours about yourself"></textarea></label>
+    <label>Good at (separate with commas)<input id="fSkills" placeholder="e.g. Cleaning, Gardening"></label>
+    <button class="primary" type="submit">Save profile</button>
+  </form>
+</section>
+
+<!-- SETTINGS -->
+<section id="v-settings" class="view">
+  <div class="bar"><button class="back" data-go="home" aria-label="Back">←</button><h2>Settings</h2></div>
+  <div class="card"><small>Signed in as</small><p class="sname" id="sName"></p><small id="sEmail"></small></div>
+  <button class="srow" id="alertBtn"><span>Phone alerts for quest updates</span><b id="alertState">Off</b></button>
+  <button class="srow" id="installBtn" hidden><span>Install Questfinder on this phone</span><b>Install</b></button>
+  <p class="hint" id="iosHint" hidden>On iPhone: tap the Share button, then “Add to Home Screen” to install.</p>
+  <button class="btn ghost full" id="logout" style="margin-top:18px">Log out</button>
+</section>
+</main>
+
+<!-- BOTTOM NAVIGATION -->
+<nav class="nav" id="nav" aria-label="Main">
+  <button data-go="home" class="on"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</button>
+  <button data-go="wallet"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M16 14.5h2"/></svg>Wallet</button>
+  <button data-go="tx"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>Transactions</button>
+  <button data-go="msgs"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg>Messages</button>
+</nav>
+
+<!-- LOG IN / SIGN UP -->
+<div class="modal" id="authModal" hidden>
+  <div class="box" role="dialog" aria-modal="true" aria-label="Log in or sign up">
+    <button class="x" data-close aria-label="Close">×</button>
+    <div class="tabs"><button id="tabLogin" class="on">Log in</button><button id="tabSignup">Sign up</button></div>
+    <form id="loginForm" novalidate>
+      <label>Email<input name="email" type="email" autocomplete="email"><em class="err"></em></label>
+      <label>Password<input name="password" type="password" autocomplete="current-password"><em class="err"></em></label>
+      <button class="primary" type="submit">Log in</button>
+    </form>
+    <form id="signupForm" novalidate hidden>
+      <label>Full name<input name="name" autocomplete="name"><em class="err"></em></label>
+      <label>Email<input name="email" type="email" autocomplete="email"><em class="err"></em></label>
+      <label>Password<input name="password" type="password" autocomplete="new-password"><em class="err"></em><small class="hint">At least 8 characters with uppercase, lowercase and a number.</small></label>
+      <label>Confirm password<input name="confirm" type="password" autocomplete="new-password"><em class="err"></em></label>
+      <button class="primary" type="submit">Create account</button>
+    </form>
+  </div>
+</div>
+
+<!-- CONFIRM PUBLISH -->
+<div class="modal" id="confirmModal" hidden>
+  <div class="box" role="dialog" aria-modal="true">
+    <h3>Publish this quest?</h3>
+    <div id="cSummary"></div>
+    <p class="hint">Workers nearby will be able to see it and accept it. You can cancel it while it is still open.</p>
+    <div class="btns"><button class="btn ghost" data-close>Go back</button><button class="primary" id="cYes">Yes, publish</button></div>
+  </div>
+</div>
+
+<!-- DEPOSIT / WITHDRAW -->
+<div class="modal" id="moneyModal" hidden>
+  <div class="box" role="dialog" aria-modal="true">
+    <button class="x" data-close aria-label="Close">×</button>
+    <h3 id="mTitle">Deposit</h3><p class="hint">Available balance: <b id="mBal">₱0.00</b></p>
+    <form id="moneyForm" novalidate>
+      <label id="gLbl">GCash mobile number<input name="gcash" inputmode="numeric" placeholder="09171234567" maxlength="13"><em class="err"></em></label>
+      <label>Amount<div class="money"><span>₱</span><input name="amount" type="number" min="50" step="1" placeholder="500"></div><em class="err"></em></label>
+      <p class="hint">Demo only: no real money moves until a payment provider is connected.</p>
+      <div class="btns"><button type="button" class="btn ghost" data-close>Cancel</button><button class="primary" type="submit" id="mGo">Confirm</button></div>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+<script src="api.js"></script>
+<script src="app (2).js"></script>
+</body>
+</html>
